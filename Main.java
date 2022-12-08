@@ -1,115 +1,90 @@
-import org.lwjgl.*;
-import org.lwjgl.glfw.*;
-import org.lwjgl.opengl.*;
-import org.lwjgl.system.*;
+package sample;
 
-import java.nio.*;
+import javafx.animation.KeyFrame;
+import javafx.animation.Timeline;
+import javafx.application.Application;
+import javafx.scene.Group;
+import javafx.scene.canvas.Canvas;
+import javafx.scene.canvas.GraphicsContext;
+import javafx.scene.layout.StackPane;
+import javafx.scene.paint.Color;
+import javafx.scene.Scene;
+import javafx.scene.paint.Paint;
+import javafx.scene.shape.Circle;
+import javafx.scene.shape.Line;
+import javafx.scene.shape.Rectangle;
+import javafx.stage.Stage;
+import javafx.util.Duration;
 
-import static org.lwjgl.glfw.Callbacks.*;
-import static org.lwjgl.glfw.GLFW.*;
-import static org.lwjgl.opengl.GL11.*;
-import static org.lwjgl.system.MemoryStack.*;
-import static org.lwjgl.system.MemoryUtil.*;
+import java.net.PortUnreachableException;
 
-public class Main {
+public class Main extends Application {
 
-    // The window handle
-    private long window;
+    public static final int Win_Wdh=800;
+    public static final int Win_Hgt=600;
+    public static final int racket_Wdh=25;
+    public static final int racket_Hgt=100;
 
-    public void run() {
-        System.out.println("Hello LWJGL " + Version.getVersion() + "!");
 
-        init();
-        loop();
+    @Override
+    public void start(Stage primaryStage){
+        Canvas canvas = new Canvas(Win_Wdh, Win_Hgt);
+        GraphicsContext graphicsContext= canvas.getGraphicsContext2D();
+        Timeline timeline = new Timeline(new KeyFrame(Duration.millis(17),e ->run(graphicsContext)));
+        timeline.setCycleCount(Timeline.INDEFINITE);
+        primaryStage.setScene(new Scene(new StackPane(canvas)));
+        primaryStage.show();
+        timeline.play();
 
-        // Free the window callbacks and destroy the window
-        glfwFreeCallbacks(window);
-        glfwDestroyWindow(window);
 
-        // Terminate GLFW and free the error callback
-        glfwTerminate();
-        glfwSetErrorCallback(null).free();
+
+
+        Group group = new Group();
+        Scene scene= new Scene(group, Win_Wdh,Win_Hgt);
+        scene.setFill(Color.MEDIUMPURPLE);
+        primaryStage.setTitle("Sample application");
+        primaryStage.setScene(scene);
+
+      /*  Line line = new Line();
+        line.setStartX(400);
+        line.setStartY(0);
+        line.setEndX(400);
+        line.setEndY(600);
+        line.setStrokeWidth(5);
+        line.setStroke(Color.WHITE);
+        group.getChildren().add(line);*/
+
+
+      /*  Circle circle = new Circle(Win_Wdh/2, Win_Hgt/2,15.0);
+        circle.setStroke(Color.PAPAYAWHIP);
+        circle.setFill(Color.DARKSALMON);
+        group.getChildren().add(circle);
+*/
+        Rectangle leftRacket = new Rectangle(racket_Wdh,racket_Hgt);
+        leftRacket.setX(racket_Wdh);
+        leftRacket.setY((Win_Hgt-racket_Hgt)/2);
+        leftRacket.setFill(Color.DARKSLATEGREY);
+        group.getChildren().add(leftRacket);
+
+
+        Rectangle rightRacket = new Rectangle(racket_Wdh,racket_Hgt);
+        rightRacket.setX(Win_Wdh-racket_Wdh*2);
+        rightRacket.setY((Win_Hgt-racket_Hgt)/2);
+        rightRacket.setFill(Color.DARKSLATEGREY);
+        group.getChildren().add(rightRacket);
+
+        primaryStage.show();
     }
 
-    private void init() {
-        // Setup an error callback. The default implementation
-        // will print the error message in System.err.
-        GLFWErrorCallback.createPrint(System.err).set();
+    private void run(GraphicsContext graphicsContext){
+        graphicsContext.moveTo(Win_Wdh/2,0);
+        graphicsContext.lineTo(Win_Wdh/2, Win_Hgt);
 
-        // Initialize GLFW. Most GLFW functions will not work before doing this.
-        if ( !glfwInit() )
-            throw new IllegalStateException("Unable to initialize GLFW");
 
-        // Configure GLFW
-        glfwDefaultWindowHints(); // optional, the current window hints are already the default
-        glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE); // the window will stay hidden after creation
-        glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE); // the window will be resizable
 
-        // Create the window
-        window = glfwCreateWindow(300, 300, "Hello World!", NULL, NULL);
-        if ( window == NULL )
-            throw new RuntimeException("Failed to create the GLFW window");
-
-        // Setup a key callback. It will be called every time a key is pressed, repeated or released.
-        glfwSetKeyCallback(window, (window, key, scancode, action, mods) -> {
-            if ( key == GLFW_KEY_ESCAPE && action == GLFW_RELEASE )
-                glfwSetWindowShouldClose(window, true); // We will detect this in the rendering loop
-        });
-
-        // Get the thread stack and push a new frame
-        try ( MemoryStack stack = stackPush() ) {
-            IntBuffer pWidth = stack.mallocInt(1); // int*
-            IntBuffer pHeight = stack.mallocInt(1); // int*
-
-            // Get the window size passed to glfwCreateWindow
-            glfwGetWindowSize(window, pWidth, pHeight);
-
-            // Get the resolution of the primary monitor
-            GLFWVidMode vidmode = glfwGetVideoMode(glfwGetPrimaryMonitor());
-
-            // Center the window
-            glfwSetWindowPos(
-                    window,
-                    (vidmode.width() - pWidth.get(0)) / 2,
-                    (vidmode.height() - pHeight.get(0)) / 2
-            );
-        } // the stack frame is popped automatically
-
-        // Make the OpenGL context current
-        glfwMakeContextCurrent(window);
-        // Enable v-sync
-        glfwSwapInterval(1);
-
-        // Make the window visible
-        glfwShowWindow(window);
-    }
-
-    private void loop() {
-        // This line is critical for LWJGL's interoperation with GLFW's
-        // OpenGL context, or any context that is managed externally.
-        // LWJGL detects the context that is current in the current thread,
-        // creates the GLCapabilities instance and makes the OpenGL
-        // bindings available for use.
-        GL.createCapabilities();
-
-        // Set the clear color
-        glClearColor(1.0f, 0.0f, 0.0f, 0.0f);
-
-        // Run the rendering loop until the user has attempted to close
-        // the window or has pressed the ESCAPE key.
-        while ( !glfwWindowShouldClose(window) ) {
-            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // clear the framebuffer
-
-            glfwSwapBuffers(window); // swap the color buffers
-
-            // Poll for window events. The key callback above will only be
-            // invoked during this call.
-            glfwPollEvents();
-        }
     }
 
     public static void main(String[] args) {
-        new Main().run();
+        launch(args);
     }
-
 }
